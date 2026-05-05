@@ -4,7 +4,14 @@ import { createClient } from "@supabase/supabase-js";
 // ─── Supabase 設定 ────────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://puaqztqlujcuwgxpexht.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_VGBv-lhpcGw3Ka3s5h-9sA_F37nCtj7";
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage,
+  }
+});
 
 // ─── 常數 ─────────────────────────────────────────────────────────────────────
 const DAILY_GOALS = { calories: 2000, protein: 60, carbs: 250, fat: 65, fiber: 25 };
@@ -314,7 +321,15 @@ const LoginScreen = ({ onLogin }) => {
   const sendMagicLink = async () => {
     if (!email.includes("@")) { setError("請輸入有效的 Email"); return; }
     setLoading(true); setError("");
-    const { error: err } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } });
+    // Always redirect to origin so PWA session is restored correctly
+    const redirectTo = window.location.origin + window.location.pathname;
+    const { error: err } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: redirectTo,
+        shouldCreateUser: true,
+      }
+    });
     setLoading(false);
     if (err) setError(err.message);
     else setSent(true);
@@ -345,10 +360,23 @@ const LoginScreen = ({ onLogin }) => {
           <div style={{ fontSize: 11, color: C.textMuted, textAlign: "center", marginTop: 12, lineHeight: 1.7 }}>收到 Email 後點連結即可登入，無需密碼</div>
         </div>
       ) : (
-        <div style={{ textAlign: "center", maxWidth: 300 }}>
+        <div style={{ textAlign: "center", maxWidth: 320 }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>📬</div>
           <div style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 8 }}>確認信已送出！</div>
-          <div style={{ fontSize: 13, color: C.textMuted }}>請到 <strong>{email}</strong> 收信，點擊連結即可登入</div>
+          <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.7, marginBottom: 20 }}>
+            請到 <strong>{email}</strong> 收信，點連結即可登入
+          </div>
+          <div style={{ background: C.card, borderRadius: 8, padding: 14, border: `0.5px solid ${C.border}`, textAlign: "left" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: C.accent, marginBottom: 6, letterSpacing: "0.5px" }}>📱 使用主畫面捷徑的話</div>
+            <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.8 }}>
+              點信件連結後會在 Safari 開啟並自動登入。<br/>
+              登入成功後，<strong>再從主畫面捷徑開啟</strong>，之後就會保持登入狀態，不需要重複驗證 ✅
+            </div>
+          </div>
+          <button onClick={() => setSent(false)}
+            style={{ marginTop: 16, background: "none", border: `0.5px solid ${C.borderStrong}`, borderRadius: 6, padding: "8px 20px", fontSize: 12, color: C.textMuted, cursor: "pointer" }}>
+            重新輸入 Email
+          </button>
         </div>
       )}
     </div>
@@ -361,13 +389,19 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
+    // Handle magic link redirect — parse token from URL if present
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setAuthLoading(false);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setAuthLoading(false);
+      // Clean up URL after magic link login
+      if (event === "SIGNED_IN" && window.location.hash) {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
