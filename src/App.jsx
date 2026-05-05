@@ -311,28 +311,28 @@ const PhotosTab = ({ photos, setPhotos, today }) => {
   );
 };
 
-// ─── 登入畫面 ─────────────────────────────────────────────────────────────────
-const LoginScreen = ({ onLogin }) => {
+// ─── 登入畫面（密碼登入）─────────────────────────────────────────────────────
+const LoginScreen = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
 
-  const sendMagicLink = async () => {
+  const inputStyle = { width: "100%", padding: "12px 14px", borderRadius: 6, border: `0.5px solid ${C.borderStrong}`, fontSize: 14, outline: "none", background: C.card, color: C.text, boxSizing: "border-box", marginBottom: 10, fontFamily: "inherit" };
+
+  const handleSubmit = async () => {
     if (!email.includes("@")) { setError("請輸入有效的 Email"); return; }
+    if (password.length < 6) { setError("密碼至少需要 6 個字元"); return; }
     setLoading(true); setError("");
-    // Always redirect to origin so PWA session is restored correctly
-    const redirectTo = window.location.origin + window.location.pathname;
-    const { error: err } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: redirectTo,
-        shouldCreateUser: true,
-      }
-    });
+    if (isSignUp) {
+      const { error: err } = await supabase.auth.signUp({ email, password });
+      if (err) setError(err.message === "User already registered" ? "此 Email 已註冊，請直接登入" : err.message);
+    } else {
+      const { error: err } = await supabase.auth.signInWithPassword({ email, password });
+      if (err) setError(err.message === "Invalid login credentials" ? "Email 或密碼錯誤" : err.message);
+    }
     setLoading(false);
-    if (err) setError(err.message);
-    else setSent(true);
   };
 
   return (
@@ -341,43 +341,48 @@ const LoginScreen = ({ onLogin }) => {
       <div style={{ fontSize: 40, marginBottom: 16 }}>🌿</div>
       <div style={{ fontSize: 11, fontWeight: 600, color: C.textSub, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 6 }}>Health Journal</div>
       <div style={{ fontSize: 22, fontWeight: 500, color: C.text, marginBottom: 6 }}>健康日記</div>
-      <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 40, textAlign: "center", lineHeight: 1.7 }}>登入後，所有裝置都能同步你的資料</div>
+      <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 36, textAlign: "center", lineHeight: 1.7 }}>登入後，所有裝置都能同步你的資料</div>
 
-      {!sent ? (
-        <div style={{ width: "100%", maxWidth: 340 }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: C.textSub, letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 6 }}>Email</div>
-          <input type="email" placeholder="your@email.com" value={email}
-            onChange={e => setEmail(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && sendMagicLink()}
-            style={{ width: "100%", padding: "12px 14px", borderRadius: 6, border: `0.5px solid ${C.borderStrong}`, fontSize: 14, outline: "none", background: C.card, color: C.text, boxSizing: "border-box", marginBottom: 10 }} />
-
-          {error && <div style={{ fontSize: 12, color: "#C47A5A", marginBottom: 8 }}>{error}</div>}
-
-          <button onClick={sendMagicLink} disabled={loading}
-            style={{ width: "100%", background: C.accent, color: "white", border: "none", borderRadius: 6, padding: "13px", fontSize: 13, fontWeight: 600, cursor: loading ? "default" : "pointer", opacity: loading ? 0.7 : 1, letterSpacing: "0.3px" }}>
-            {loading ? "傳送中⋯" : "傳送登入連結"}
-          </button>
-          <div style={{ fontSize: 11, color: C.textMuted, textAlign: "center", marginTop: 12, lineHeight: 1.7 }}>收到 Email 後點連結即可登入，無需密碼</div>
+      <div style={{ width: "100%", maxWidth: 340 }}>
+        {/* 切換登入 / 註冊 */}
+        <div style={{ display: "flex", background: C.card, borderRadius: 6, padding: 3, marginBottom: 20, border: `0.5px solid ${C.border}` }}>
+          {[["login", "登入"], ["signup", "註冊新帳號"]].map(([key, label]) => (
+            <button key={key} onClick={() => { setIsSignUp(key === "signup"); setError(""); }}
+              style={{ flex: 1, padding: "8px", borderRadius: 4, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.2s",
+                background: (key === "signup") === isSignUp ? C.accent : "transparent",
+                color: (key === "signup") === isSignUp ? "white" : C.textMuted }}>
+              {label}
+            </button>
+          ))}
         </div>
-      ) : (
-        <div style={{ textAlign: "center", maxWidth: 320 }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📬</div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 8 }}>確認信已送出！</div>
-          <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.7, marginBottom: 20 }}>
-            請到 <strong>{email}</strong> 收信，點連結即可登入
-          </div>
-          <div style={{ background: C.card, borderRadius: 8, padding: 14, border: `0.5px solid ${C.border}`, textAlign: "left" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: C.accent, marginBottom: 6, letterSpacing: "0.5px" }}>📱 使用主畫面捷徑的話</div>
-            <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.8 }}>
-              點信件連結後會在 Safari 開啟並自動登入。<br/>
-              登入成功後，<strong>再從主畫面捷徑開啟</strong>，之後就會保持登入狀態，不需要重複驗證 ✅
-            </div>
-          </div>
-          <button onClick={() => setSent(false)}
-            style={{ marginTop: 16, background: "none", border: `0.5px solid ${C.borderStrong}`, borderRadius: 6, padding: "8px 20px", fontSize: 12, color: C.textMuted, cursor: "pointer" }}>
-            重新輸入 Email
-          </button>
+
+        <div style={{ fontSize: 10, fontWeight: 600, color: C.textSub, letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 6 }}>Email</div>
+        <input type="email" placeholder="your@email.com" value={email}
+          onChange={e => setEmail(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && handleSubmit()}
+          style={inputStyle} />
+
+        <div style={{ fontSize: 10, fontWeight: 600, color: C.textSub, letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 6 }}>密碼</div>
+        <input type="password" placeholder={isSignUp ? "設定密碼（至少 6 個字元）" : "輸入密碼"} value={password}
+          onChange={e => setPassword(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && handleSubmit()}
+          style={inputStyle} />
+
+        {error && <div style={{ fontSize: 12, color: "#C47A5A", marginBottom: 10, padding: "8px 10px", background: "#FAF0EC", borderRadius: 6 }}>{error}</div>}
+
+        <button onClick={handleSubmit} disabled={loading}
+          style={{ width: "100%", background: C.accent, color: "white", border: "none", borderRadius: 6, padding: "13px", fontSize: 13, fontWeight: 600, cursor: loading ? "default" : "pointer", opacity: loading ? 0.7 : 1, letterSpacing: "0.3px", fontFamily: "inherit" }}>
+          {loading ? "處理中⋯" : isSignUp ? "建立帳號" : "登入"}
+        </button>
+
+        <div style={{ fontSize: 11, color: C.textMuted, textAlign: "center", marginTop: 14, lineHeight: 1.8 }}>
+          {isSignUp ? "已有帳號？" : "還沒有帳號？"}
+          <span onClick={() => { setIsSignUp(!isSignUp); setError(""); }}
+            style={{ color: C.accent, fontWeight: 600, cursor: "pointer", marginLeft: 4 }}>
+            {isSignUp ? "直接登入" : "立即註冊"}
+          </span>
         </div>
+      </div>
       )}
     </div>
   );
