@@ -97,13 +97,13 @@ const NutriBar = ({ label, current, goal, color, unit = "g" }) => {
   return (
     <div style={{ marginBottom: 10 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, fontSize: 12 }}>
-        <span style={{ fontWeight: 600, color: C.text }}>{label}</span>
+        <span style={{ fontWeight: 500, color: C.text }}>{label}</span>
         <span style={{ color: over ? C.accent : C.textMuted }}>
           {current}{unit} / {goal}{unit}{over ? " ⚠️" : ` (剩 ${remaining}${unit})`}
         </span>
       </div>
-      <div style={{ height: 7, borderRadius: 99, background: C.border, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${pct}%`, borderRadius: 99, background: over ? C.accent : color, transition: "width 0.5s ease" }} />
+      <div style={{ height: 7, borderRadius: 50, background: C.border, overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${pct}%`, borderRadius: 50, background: over ? C.accent : color, transition: "width 0.5s ease" }} />
       </div>
     </div>
   );
@@ -193,41 +193,47 @@ const PhotosTab = ({ photos, setPhotos, today }) => {
   const deletePhoto = (id) => { if (window.confirm("確定刪除？")) setPhotos(prev => prev.filter(p => p.id !== id)); };
   const sorted = [...photos].sort((a, b) => b.date.localeCompare(a.date));
 
-  const inp = { width: "100%", padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${C.border}`, fontSize: 13, outline: "none", background: C.bg, color: C.text, boxSizing: "border-box" };
+  const inp = { width: "100%", padding: "10px 12px", borderRadius: 6, border: `0.5px solid ${C.border}`, fontSize: 13, outline: "none", background: C.bg, color: C.text, boxSizing: "border-box" };
 
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <div style={{ fontSize: 13, color: C.textMuted, fontWeight: 600 }}>共 {photos.length} 張記錄</div>
-        <button style={{ background: C.accent, color: "white", border: "none", borderRadius: 12, padding: "10px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }} onClick={() => setShowUpload(!showUpload)}>+ 上傳照片</button>
+        <div style={{ fontSize: 12, color: C.textSub, fontWeight: 500 }}>共 {photos.length} 張記錄</div>
+        <button style={{ background: C.accent, color: "white", border: "none", borderRadius: 6, padding: "10px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }} onClick={() => setShowUpload(!showUpload)}>+ 上傳照片</button>
       </div>
       {showUpload && (
-        <div style={{ background: C.card, borderRadius: 16, padding: 16, marginBottom: 12, border: `1px solid ${C.border}` }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 12 }}>新增體態照片</div>
-          {/* 日期：文字顯示＋點擊彈出 date input，避免跑版 */}
+        <div style={{ background: C.card, borderRadius: 8, padding: 16, marginBottom: 12, border: `0.5px solid ${C.border}` }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: C.text, marginBottom: 12 }}>新增體態照片</div>
+          {/* 日期：文字框＋透明 date input 疊上去，overflow hidden 防止跑版 */}
           <div style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, marginBottom: 4 }}>拍攝日期</div>
-            <input ref={dateRef} type="date" max={today} value={uploadDate}
-              onChange={e => { if (e.target.value) setUploadDate(e.target.value); }}
-              style={{ ...inp, cursor: "pointer" }} />
+            <div style={{ fontSize: 11, fontWeight: 600, color: C.textMuted, marginBottom: 4 }}>拍攝日期</div>
+            <div style={{ position: "relative", overflow: "hidden", borderRadius: 6 }}>
+              <div style={{ ...inp, display: "flex", justifyContent: "space-between", alignItems: "center", pointerEvents: "none" }}>
+                <span>{new Date(uploadDate + "T00:00:00").toLocaleDateString("zh-TW", { year: "numeric", month: "long", day: "numeric" })}</span>
+                <span style={{ fontSize: 14, color: C.textSub }}>▾</span>
+              </div>
+              <input ref={dateRef} type="date" max={today} value={uploadDate}
+                onChange={e => { if (e.target.value) setUploadDate(e.target.value); }}
+                style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%", margin: 0 }} />
+            </div>
           </div>
 
           {/* 選照片：拍照用 capture，相簿不加 capture 且不限 accept（iOS Safari 才會跳選擇視窗）*/}
           <div style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, marginBottom: 6 }}>選擇照片</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: C.textMuted, marginBottom: 6 }}>選擇照片</div>
             {previewSrc ? (
               <button type="button" onClick={() => { setPreviewSrc(null); if(fileRef.current) fileRef.current.value=""; if(cameraRef.current) cameraRef.current.value=""; }}
-                style={{ width: "100%", padding: "10px", borderRadius: 10, border: `1.5px solid ${C.border}`, background: C.bg, fontSize: 13, fontWeight: 700, cursor: "pointer", color: C.accent }}>
+                style={{ width: "100%", padding: "10px", borderRadius: 6, border: `0.5px solid ${C.border}`, background: C.bg, fontSize: 13, fontWeight: 600, cursor: "pointer", color: C.accent }}>
                 🔄 重新選擇
               </button>
             ) : (
               <div style={{ display: "flex", gap: 8 }}>
                 <button type="button" onClick={() => cameraRef.current.click()}
-                  style={{ flex: 1, padding: "12px 8px", borderRadius: 10, border: `1.5px solid ${C.border}`, background: C.bg, fontSize: 13, fontWeight: 700, cursor: "pointer", color: C.text }}>
+                  style={{ flex: 1, padding: "12px 8px", borderRadius: 6, border: `0.5px solid ${C.border}`, background: C.bg, fontSize: 13, fontWeight: 600, cursor: "pointer", color: C.text }}>
                   📷 拍照
                 </button>
                 <button type="button" onClick={() => fileRef.current.click()}
-                  style={{ flex: 1, padding: "12px 8px", borderRadius: 10, border: `1.5px solid ${C.border}`, background: C.bg, fontSize: 13, fontWeight: 700, cursor: "pointer", color: C.text }}>
+                  style={{ flex: 1, padding: "12px 8px", borderRadius: 6, border: `0.5px solid ${C.border}`, background: C.bg, fontSize: 13, fontWeight: 600, cursor: "pointer", color: C.text }}>
                   🖼️ 從相簿
                 </button>
               </div>
@@ -235,33 +241,33 @@ const PhotosTab = ({ photos, setPhotos, today }) => {
             <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleFile} style={{ display: "none" }} />
             <input ref={fileRef} type="file" onChange={handleFile} style={{ display: "none" }} />
           </div>
-          {previewSrc && <div style={{ marginBottom: 10 }}><img src={previewSrc} alt="預覽" style={{ width: "100%", maxHeight: 240, objectFit: "cover", borderRadius: 12 }} /></div>}
+          {previewSrc && <div style={{ marginBottom: 10 }}><img src={previewSrc} alt="預覽" style={{ width: "100%", maxHeight: 240, objectFit: "cover", borderRadius: 6 }} /></div>}
           <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, marginBottom: 4 }}>備註（選填）</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: C.textMuted, marginBottom: 4 }}>備註（選填）</div>
             <input type="text" placeholder="例如：第 1 週、打第 2 針後..." value={note} onChange={e => setNote(e.target.value)} style={inp} />
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={savePhoto} disabled={!previewSrc}
-              style={{ flex: 1, background: previewSrc ? C.green : C.border, color: "white", border: "none", borderRadius: 12, padding: "10px", fontSize: 13, fontWeight: 700, cursor: previewSrc ? "pointer" : "default" }}>儲存照片</button>
+              style={{ flex: 1, background: previewSrc ? C.green : C.border, color: "white", border: "none", borderRadius: 6, padding: "10px", fontSize: 13, fontWeight: 600, cursor: previewSrc ? "pointer" : "default" }}>儲存照片</button>
             <button onClick={() => { setShowUpload(false); setPreviewSrc(null); setNote(""); if (fileRef.current) fileRef.current.value = ""; }}
-              style={{ background: "transparent", border: `1.5px solid ${C.border}`, borderRadius: 10, padding: "10px 14px", fontSize: 12, fontWeight: 600, color: C.textMuted, cursor: "pointer" }}>取消</button>
+              style={{ background: "transparent", border: `0.5px solid ${C.border}`, borderRadius: 6, padding: "10px 14px", fontSize: 12, fontWeight: 600, color: C.textMuted, cursor: "pointer" }}>取消</button>
           </div>
         </div>
       )}
       {photos.length === 0 && (
-        <div style={{ background: C.card, borderRadius: 16, padding: 40, textAlign: "center", border: `1px dashed ${C.border}` }}>
+        <div style={{ background: C.card, borderRadius: 8, padding: 40, textAlign: "center", border: `1px dashed ${C.border}` }}>
           <div style={{ fontSize: 36, marginBottom: 8 }}>📸</div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 4 }}>還沒有體態照片</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 4 }}>還沒有體態照片</div>
           <div style={{ fontSize: 12, color: C.textMuted }}>每週上傳一張，記錄你的蛻變過程</div>
         </div>
       )}
       {sorted.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           {sorted.map(p => (
-            <div key={p.id} style={{ background: C.card, borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}`, cursor: "pointer" }} onClick={() => setSelectedPhoto(p)}>
+            <div key={p.id} style={{ background: C.card, borderRadius: 6, overflow: "hidden", border: `0.5px solid ${C.border}`, cursor: "pointer" }} onClick={() => setSelectedPhoto(p)}>
               <img src={p.src} alt={p.note || p.date} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }} />
               <div style={{ padding: "8px 10px" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: C.text }}>{fmtShort(p.date)}</div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: C.text }}>{fmtShort(p.date)}</div>
                 {p.note && <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.note}</div>}
               </div>
             </div>
@@ -272,7 +278,7 @@ const PhotosTab = ({ photos, setPhotos, today }) => {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.92)", zIndex: 200, display: "flex", flexDirection: "column" }} onClick={() => setSelectedPhoto(null)}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px" }} onClick={e => e.stopPropagation()}>
             <div>
-              <div style={{ color: "white", fontWeight: 700, fontSize: 15 }}>{fmtLong(selectedPhoto.date)}</div>
+              <div style={{ color: "white", fontWeight: 600, fontSize: 15 }}>{fmtLong(selectedPhoto.date)}</div>
               {selectedPhoto.note && <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, marginTop: 2 }}>{selectedPhoto.note}</div>}
             </div>
             <div style={{ display: "flex", gap: 10 }}>
@@ -281,14 +287,14 @@ const PhotosTab = ({ photos, setPhotos, today }) => {
             </div>
           </div>
           <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px 32px" }}>
-            <img src={selectedPhoto.src} alt="" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: 12 }} />
+            <img src={selectedPhoto.src} alt="" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: 6 }} />
           </div>
           {sorted.length > 1 && (() => {
             const idx = sorted.findIndex(p => p.id === selectedPhoto.id);
             return (
               <>
-                {idx < sorted.length - 1 && <button style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 99, width: 40, height: 40, fontSize: 20, color: "white", cursor: "pointer" }} onClick={e => { e.stopPropagation(); setSelectedPhoto(sorted[idx + 1]); }}>‹</button>}
-                {idx > 0 && <button style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 99, width: 40, height: 40, fontSize: 20, color: "white", cursor: "pointer" }} onClick={e => { e.stopPropagation(); setSelectedPhoto(sorted[idx - 1]); }}>›</button>}
+                {idx < sorted.length - 1 && <button style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 50, width: 40, height: 40, fontSize: 20, color: "white", cursor: "pointer" }} onClick={e => { e.stopPropagation(); setSelectedPhoto(sorted[idx + 1]); }}>‹</button>}
+                {idx > 0 && <button style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 50, width: 40, height: 40, fontSize: 20, color: "white", cursor: "pointer" }} onClick={e => { e.stopPropagation(); setSelectedPhoto(sorted[idx - 1]); }}>›</button>}
               </>
             );
           })()}
@@ -341,7 +347,7 @@ const LoginScreen = ({ onLogin }) => {
       ) : (
         <div style={{ textAlign: "center", maxWidth: 300 }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>📬</div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 8 }}>確認信已送出！</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 8 }}>確認信已送出！</div>
           <div style={{ fontSize: 13, color: C.textMuted }}>請到 <strong>{email}</strong> 收信，點擊連結即可登入</div>
         </div>
       )}
@@ -462,7 +468,7 @@ function MainApp({ userId, userEmail }) {
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'Noto Sans TC', sans-serif", gap: 14 }}>
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
       <div style={{ fontSize: 36 }}>🌿</div>
-      <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>健康日記</div>
+      <div style={{ fontSize: 15, fontWeight: 600, color: C.text }}>健康日記</div>
       <div style={{ fontSize: 12, color: C.textMuted }}>正在從雲端載入你的資料⋯</div>
     </div>
   );
@@ -520,7 +526,7 @@ function MainApp({ userId, userEmail }) {
               <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 12 }}>
                 <div style={{ position: "relative", flexShrink: 0 }}>
                   <Ring value={selectedTotals.calories} max={goals.calories} color={calRemaining < 0 ? C.accent : C.green} size={80} />
-                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: C.textMuted }}>
+                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: C.textMuted }}>
                     {Math.round((selectedTotals.calories / goals.calories) * 100)}%
                   </div>
                 </div>
@@ -545,7 +551,7 @@ function MainApp({ userId, userEmail }) {
                 <div>
                   <div style={S.cardTitle}>{isToday ? "今日體重" : "體重記錄"}</div>
                   {selectedWeight
-                    ? <div style={{ fontSize: 28, fontWeight: 900, color: C.accent }}>{selectedWeight.weight} <span style={{ fontSize: 14, fontWeight: 400, color: C.textMuted }}>kg</span></div>
+                    ? <div style={{ fontSize: 28, fontWeight: 600, color: C.accent }}>{selectedWeight.weight} <span style={{ fontSize: 14, fontWeight: 400, color: C.textMuted }}>kg</span></div>
                     : <div style={{ fontSize: 13, color: C.textMuted }}>尚未記錄</div>}
                 </div>
                 <button style={S.btn()} onClick={() => setShowWeightInput(!showWeightInput)}>{selectedWeight ? "更新" : "+ 記錄"}</button>
@@ -567,17 +573,17 @@ function MainApp({ userId, userEmail }) {
               {showFoodForm && (
                 <div style={{ background: C.card, borderRadius: 8, padding: 12, marginBottom: 12 }}>
                   <input style={{ ...S.input, marginBottom: 8 }} placeholder="食物名稱" value={foodForm.name} onChange={e => setFoodForm(p => ({ ...p, name: e.target.value }))} />
-                  <div style={{ background: "white", borderRadius: 10, padding: "10px 14px", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "space-between", border: `0.5px solid ${C.accent}`, }}>
+                  <div style={{ background: "white", borderRadius: 6, padding: "10px 14px", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "space-between", border: `0.5px solid ${C.accent}`, }}>
                     <div>
                       <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600 }}>自動計算卡路里</div>
                       <div style={{ fontSize: 11, color: C.textMuted, marginTop: 1 }}>蛋白質×4 + 碳水×4 + 脂肪×9</div>
                     </div>
-                    <div><span style={{ fontSize: 26, fontWeight: 900, color: C.accent }}>{foodForm.calories || 0}</span><span style={{ fontSize: 12, color: C.textMuted, marginLeft: 4 }}>kcal</span></div>
+                    <div><span style={{ fontSize: 26, fontWeight: 600, color: C.accent }}>{foodForm.calories || 0}</span><span style={{ fontSize: 12, color: C.textMuted, marginLeft: 4 }}>kcal</span></div>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
                     {[["protein", "蛋白質 (×4 kcal)", C.blue], ["carbs", "碳水化合物 (×4 kcal)", C.yellow], ["fat", "脂肪 (×9 kcal)", C.purple], ["fiber", "膳食纖維", C.green]].map(([field, label, color]) => (
                       <div key={field}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color, marginBottom: 3, paddingLeft: 2 }}>{label}</div>
+                        <div style={{ fontSize: 10, fontWeight: 600, color, marginBottom: 3, paddingLeft: 2 }}>{label}</div>
                         <input style={{ ...S.input, borderColor: color }} type="number" placeholder="0 g" value={foodForm[field]}
                           onChange={e => {
                             const v = e.target.value;
@@ -601,7 +607,7 @@ function MainApp({ userId, userEmail }) {
               )}
               {selectedFoods.length === 0 && <div style={{ color: C.textMuted, fontSize: 13, textAlign: "center", padding: "12px 0" }}>{isToday ? "今天還沒有記錄飲食 🍽️" : "這天還沒有記錄飲食 🍽️"}</div>}
               {selectedFoods.map(f => (
-                <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
+                <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `0.5px solid ${C.border}` }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, fontSize: 13, color: C.text }}>{f.name}</div>
                     <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>{f.calories}kcal · 蛋白{f.protein}g · 碳水{f.carbs}g · 脂肪{f.fat}g</div>
@@ -616,21 +622,21 @@ function MainApp({ userId, userEmail }) {
         {/* 體重趨勢 TAB */}
         {tab === "weight" && (
           <>
-            <div style={{ background: C.accent, borderRadius: 14, padding: "12px 16px", marginBottom: 12 }}>
+            <div style={{ background: C.accent, borderRadius: 6, padding: "12px 16px", marginBottom: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ fontSize: 22 }}>💉</div>
                 <div style={{ flex: 1 }}>
                   {!editingShotLabel ? (
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <div style={{ fontWeight: 800, fontSize: 13, color: "white" }}>{shotLabel}</div>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: "white" }}>{shotLabel}</div>
                       <button onClick={() => { setShotLabelInput(shotLabel); setEditingShotLabel(true); }} style={{ background: "rgba(255,255,255,0.2)", border: "none", borderRadius: 5, padding: "1px 6px", fontSize: 10, color: "white", cursor: "pointer" }}>✏️</button>
                     </div>
                   ) : (
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                       <input autoFocus value={shotLabelInput} onChange={e => setShotLabelInput(e.target.value)}
                         onKeyDown={e => { if (e.key === "Enter" && shotLabelInput.trim()) { setShotLabel(shotLabelInput.trim()); setEditingShotLabel(false); } if (e.key === "Escape") setEditingShotLabel(false); }}
-                        style={{ border: "none", borderRadius: 8, padding: "4px 8px", fontSize: 13, fontWeight: 700, color: C.text, outline: "none", background: "white", width: "100%" }} />
-                      <button onClick={() => { if (shotLabelInput.trim()) setShotLabel(shotLabelInput.trim()); setEditingShotLabel(false); }} style={{ background: "rgba(255,255,255,0.3)", border: "none", borderRadius: 6, padding: "4px 8px", fontSize: 11, color: "white", cursor: "pointer", fontWeight: 700, flexShrink: 0 }}>確認</button>
+                        style={{ border: "none", borderRadius: 8, padding: "4px 8px", fontSize: 13, fontWeight: 600, color: C.text, outline: "none", background: "white", width: "100%" }} />
+                      <button onClick={() => { if (shotLabelInput.trim()) setShotLabel(shotLabelInput.trim()); setEditingShotLabel(false); }} style={{ background: "rgba(255,255,255,0.3)", border: "none", borderRadius: 6, padding: "4px 8px", fontSize: 11, color: "white", cursor: "pointer", fontWeight: 600, flexShrink: 0 }}>確認</button>
                     </div>
                   )}
                   {!editingShotDate ? (
@@ -644,8 +650,8 @@ function MainApp({ userId, userEmail }) {
                   ) : (
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
                       <input type="date" value={shotDateInput} max={today} onChange={e => setShotDateInput(e.target.value)}
-                        style={{ border: "none", borderRadius: 8, padding: "4px 8px", fontSize: 12, fontWeight: 700, color: C.text, outline: "none", background: "white" }} />
-                      <button onClick={() => { if (shotDateInput) setShotDate(shotDateInput); setEditingShotDate(false); }} style={{ background: "rgba(255,255,255,0.3)", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 11, color: "white", cursor: "pointer", fontWeight: 700 }}>確認</button>
+                        style={{ border: "none", borderRadius: 8, padding: "4px 8px", fontSize: 12, fontWeight: 600, color: C.text, outline: "none", background: "white" }} />
+                      <button onClick={() => { if (shotDateInput) setShotDate(shotDateInput); setEditingShotDate(false); }} style={{ background: "rgba(255,255,255,0.3)", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 11, color: "white", cursor: "pointer", fontWeight: 600 }}>確認</button>
                       <button onClick={() => setEditingShotDate(false)} style={{ background: "transparent", border: "none", fontSize: 11, color: "rgba(255,255,255,0.7)", cursor: "pointer" }}>取消</button>
                     </div>
                   )}
@@ -657,7 +663,7 @@ function MainApp({ userId, userEmail }) {
                     const diff = (latestW.weight - shotW.weight).toFixed(1);
                     return (
                       <div style={{ textAlign: "right", flexShrink: 0 }}>
-                        <div style={{ fontSize: 20, fontWeight: 900, color: "white" }}>{diff > 0 ? "+" : ""}{diff} kg</div>
+                        <div style={{ fontSize: 20, fontWeight: 600, color: "white" }}>{diff > 0 ? "+" : ""}{diff} kg</div>
                         <div style={{ fontSize: 10, color: "rgba(255,255,255,0.8)" }}>自開始以來</div>
                       </div>
                     );
@@ -676,29 +682,29 @@ function MainApp({ userId, userEmail }) {
                 <div style={S.cardTitle}>統計</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
                   {[["最新", weightHistory[weightHistory.length - 1]?.weight + " kg", C.accent], ["最高", Math.max(...weightHistory.map(w => w.weight)) + " kg", C.yellow], ["最低", Math.min(...weightHistory.map(w => w.weight)) + " kg", C.green]].map(([label, val, color]) => (
-                    <div key={label} style={{ background: C.bg, borderRadius: 12, padding: "12px 10px", textAlign: "center" }}>
+                    <div key={label} style={{ background: C.bg, borderRadius: 6, padding: "12px 10px", textAlign: "center" }}>
                       <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 4 }}>{label}</div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color }}>{val}</div>
+                      <div style={{ fontSize: 18, fontWeight: 600, color }}>{val}</div>
                     </div>
                   ))}
                 </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, marginBottom: 8 }}>所有記錄</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: C.textMuted, marginBottom: 8 }}>所有記錄</div>
                 {weightHistory.slice().reverse().map(w => {
                   const isShotDay = w.date === shotDate;
                   const prevW = weightHistory[weightHistory.findIndex(h => h.date === w.date) - 1];
                   const diff = prevW ? (w.weight - prevW.weight).toFixed(1) : null;
                   return (
-                    <div key={w.date} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: `1px solid ${C.border}` }}>
+                    <div key={w.date} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: `0.5px solid ${C.border}` }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span style={{ fontSize: 13, color: C.text, fontWeight: w.date === today ? 700 : 400 }}>
                             {new Date(w.date + "T00:00:00").toLocaleDateString("zh-TW", { month: "short", day: "numeric", weekday: "short" })}
                           </span>
-                          {isShotDay && <span style={{ fontSize: 10, background: C.accent, color: "white", borderRadius: 99, padding: "1px 6px", fontWeight: 700 }}>💉 注射日</span>}
-                          {w.date === today && <span style={{ fontSize: 10, background: C.green, color: "white", borderRadius: 99, padding: "1px 6px", fontWeight: 700 }}>今天</span>}
+                          {isShotDay && <span style={{ fontSize: 10, background: C.accent, color: "white", borderRadius: 50, padding: "1px 6px", fontWeight: 600 }}>💉 注射日</span>}
+                          {w.date === today && <span style={{ fontSize: 10, background: C.green, color: "white", borderRadius: 50, padding: "1px 6px", fontWeight: 600 }}>今天</span>}
                         </div>
                       </div>
-                      <span style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{w.weight} kg</span>
+                      <span style={{ fontWeight: 600, fontSize: 14, color: C.text }}>{w.weight} kg</span>
                       {diff !== null && <span style={{ fontSize: 11, fontWeight: 600, color: diff > 0 ? C.accent : C.green, minWidth: 42, textAlign: "right" }}>{diff > 0 ? "▲" : diff < 0 ? "▼" : "—"}{Math.abs(diff)}</span>}
                       <button onClick={() => setWeightHistory(prev => prev.filter(h => h.date !== w.date))} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, color: C.border, padding: "0 2px" }}>🗑</button>
                     </div>
@@ -726,11 +732,11 @@ function MainApp({ userId, userEmail }) {
               return (
                 <div key={date} style={{ marginBottom: 14 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span style={{ fontWeight: 700, fontSize: 13, color: C.text }}>{fmtShort(date)}</span>
-                    <span style={{ fontSize: 12, color: C.accent, fontWeight: 700 }}>{total} kcal</span>
+                    <span style={{ fontWeight: 600, fontSize: 13, color: C.text }}>{fmtShort(date)}</span>
+                    <span style={{ fontSize: 12, color: C.accent, fontWeight: 600 }}>{total} kcal</span>
                   </div>
                   {foods.map(f => (
-                    <div key={f.id} style={{ fontSize: 12, color: C.textMuted, padding: "4px 0 4px 10px", borderLeft: `2.5px solid ${C.border}`, marginBottom: 3 }}>
+                    <div key={f.id} style={{ fontSize: 12, color: C.textMuted, padding: "4px 0 4px 10px", borderLeft: `2px solid ${C.border}`, marginBottom: 3 }}>
                       {f.name} · {f.calories}kcal
                     </div>
                   ))}
@@ -745,19 +751,19 @@ function MainApp({ userId, userEmail }) {
       {showGoals && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 100, display: "flex", alignItems: "flex-end" }}>
           <div style={{ background: C.card, borderRadius: "12px 12px 0 0", padding: 20, width: "100%", boxSizing: "border-box", maxHeight: "90vh", overflowY: "auto" }}>
-            <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 4, color: C.text }}>設定每日目標</div>
+            <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4, color: C.text }}>設定每日目標</div>
             <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 14 }}>輸入三大營養素，卡路里自動計算</div>
             <div style={{ background: C.accentLight, borderRadius: 6, padding: "12px 16px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", border: `0.5px solid ${C.accent}55` }}>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: C.accent }}>每日卡路里目標</div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: C.accent }}>每日卡路里目標</div>
                 <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2 }}>蛋白質×4 + 碳水×4 + 脂肪×9</div>
               </div>
-              <div><span style={{ fontSize: 30, fontWeight: 900, color: C.accent }}>{goalsForm.calories}</span><span style={{ fontSize: 12, color: C.textMuted, marginLeft: 4 }}>kcal</span></div>
+              <div><span style={{ fontSize: 30, fontWeight: 600, color: C.accent }}>{goalsForm.calories}</span><span style={{ fontSize: 12, color: C.textMuted, marginLeft: 4 }}>kcal</span></div>
             </div>
             {[["protein", "蛋白質", C.blue, "×4 kcal/g"], ["carbs", "碳水化合物", C.yellow, "×4 kcal/g"], ["fat", "脂肪", C.purple, "×9 kcal/g"]].map(([key, label, color, hint]) => (
               <div key={key} style={{ marginBottom: 10 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <label style={{ fontSize: 12, color, fontWeight: 700 }}>{label} (g)</label>
+                  <label style={{ fontSize: 12, color, fontWeight: 600 }}>{label} (g)</label>
                   <span style={{ fontSize: 11, color: C.textMuted }}>{hint}</span>
                 </div>
                 <input style={{ ...S.input, borderColor: color }} type="number" value={goalsForm[key]}
@@ -772,7 +778,7 @@ function MainApp({ userId, userEmail }) {
               </div>
             ))}
             <div style={{ marginBottom: 14 }}>
-              <label style={{ fontSize: 12, color: C.green, fontWeight: 700 }}>膳食纖維 (g)</label>
+              <label style={{ fontSize: 12, color: C.green, fontWeight: 600 }}>膳食纖維 (g)</label>
               <input style={{ ...S.input, marginTop: 4, borderColor: C.green }} type="number" value={goalsForm.fiber} onChange={e => setGoalsForm(p => ({ ...p, fiber: parseFloat(e.target.value) || 0 }))} />
             </div>
             <div style={S.row}>
