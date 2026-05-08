@@ -14,7 +14,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 
 // ─── 常數 ─────────────────────────────────────────────────────────────────────
-const DAILY_GOALS = { calories: 2000, protein: 60, carbs: 250, fat: 65, fiber: 25 };
+const DAILY_GOALS = { calories: 2000, protein: 60, carbs: 250, fat: 65 };
 
 const C = {
   bg: "#FAFAF7",        // 砂白底色
@@ -116,21 +116,38 @@ const NutriBar = ({ label, current, goal, color, unit = "g" }) => {
   );
 };
 
-const WeightChart = ({ data, shotDate }) => {
-  if (data.length < 2) return (
+const RANGE_OPTIONS = [
+  { label: "2週", days: 14 },
+  { label: "1個月", days: 30 },
+  { label: "3個月", days: 90 },
+  { label: "全部", days: 0 },
+];
+
+const WeightChart = ({ data, shotDate, rangeDays }) => {
+  // Filter by range
+  const filtered = rangeDays === 0 ? data : (() => {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - rangeDays);
+    const cutoffStr = cutoff.toISOString().split("T")[0];
+    return data.filter(d => d.date >= cutoffStr);
+  })();
+
+  if (filtered.length < 2) return (
     <div style={{ textAlign: "center", color: C.textMuted, padding: "40px 0", fontSize: 13 }}>
-      至少記錄 2 天才能顯示曲線圖 📈
+      {data.length < 2 ? "至少記錄 2 天才能顯示曲線圖 📈" : "此時間範圍內資料不足"}
     </div>
   );
+
   const W = 480, H = 190, PAD = { t: 20, r: 20, b: 36, l: 48 };
-  const weights = data.map(d => d.weight);
+  const weights = filtered.map(d => d.weight);
   const minW = Math.min(...weights) - 1, maxW = Math.max(...weights) + 1;
-  const sx = (i) => PAD.l + (i / (data.length - 1)) * (W - PAD.l - PAD.r);
+  const sx = (i) => PAD.l + (i / (filtered.length - 1)) * (W - PAD.l - PAD.r);
   const sy = (w) => PAD.t + (1 - (w - minW) / (maxW - minW)) * (H - PAD.t - PAD.b);
-  const points = data.map((d, i) => `${sx(i)},${sy(d.weight)}`).join(" ");
-  const area = `M${sx(0)},${sy(data[0].weight)} ` + data.slice(1).map((d, i) => `L${sx(i + 1)},${sy(d.weight)}`).join(" ") + ` L${sx(data.length - 1)},${H - PAD.b} L${sx(0)},${H - PAD.b} Z`;
-  const shotIdx = shotDate ? data.findIndex(d => d.date >= shotDate) : -1;
-  const step = data.length <= 7 ? 1 : data.length <= 14 ? 2 : Math.ceil(data.length / 7);
+  const points = filtered.map((d, i) => `${sx(i)},${sy(d.weight)}`).join(" ");
+  const area = `M${sx(0)},${sy(filtered[0].weight)} ` + filtered.slice(1).map((d, i) => `L${sx(i + 1)},${sy(d.weight)}`).join(" ") + ` L${sx(filtered.length - 1)},${H - PAD.b} L${sx(0)},${H - PAD.b} Z`;
+  const shotIdx = shotDate ? filtered.findIndex(d => d.date >= shotDate) : -1;
+  const step = filtered.length <= 7 ? 1 : filtered.length <= 14 ? 2 : Math.ceil(filtered.length / 7);
+
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto" }}>
       <defs>
@@ -154,15 +171,15 @@ const WeightChart = ({ data, shotDate }) => {
           <text x={sx(shotIdx) + 4} y={PAD.t + 10} fontSize="9" fill={C.accent} fontWeight="700">💉 開始</text>
         </g>
       )}
-      {data.map((d, i) => (i % step === 0 || i === data.length - 1) && (
+      {filtered.map((d, i) => (i % step === 0 || i === filtered.length - 1) && (
         <text key={i} x={sx(i)} y={H - PAD.b + 14} textAnchor="middle" fontSize="9" fill={C.textMuted}>{fmtShort(d.date)}</text>
       ))}
       <path d={area} fill="url(#wg)" />
       <polyline points={points} fill="none" stroke={C.accent} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-      {data.map((d, i) => (
+      {filtered.map((d, i) => (
         <g key={i}>
           <circle cx={sx(i)} cy={sy(d.weight)} r={i === shotIdx ? 6 : 4} fill={i === shotIdx ? C.accent : "white"} stroke={C.accent} strokeWidth="2" />
-          {(data.length <= 10 || i === data.length - 1 || i === shotIdx) && (
+          {(filtered.length <= 10 || i === filtered.length - 1 || i === shotIdx) && (
             <text x={sx(i)} y={sy(d.weight) - 9} textAnchor="middle" fontSize="9" fill={C.accent} fontWeight="600">{d.weight}</text>
           )}
         </g>
@@ -426,6 +443,7 @@ export default function App() {
 // ─── 主畫面（需登入） ──────────────────────────────────────────────────────────
 function MainApp({ userId, userEmail }) {
   const [tab, setTab] = useState("today");
+  const [chartRange, setChartRange] = useState(30);
   const [weightHistory, setWeightHistory, readyWH] = useData(userId, "wh_v2", []);
   const [foodLog, setFoodLog, readyFL] = useData(userId, "fl_v2", {});
   const [goals, setGoals, readyGoals] = useData(userId, "goals_v2", DAILY_GOALS);
@@ -442,7 +460,7 @@ function MainApp({ userId, userEmail }) {
   const [shotLabelInput, setShotLabelInput] = useState("");
   const [weightInput, setWeightInput] = useState("");
   const [showWeightInput, setShowWeightInput] = useState(false);
-  const [foodForm, setFoodForm] = useState({ name: "", calories: "", protein: "", carbs: "", fat: "", fiber: "" });
+  const [foodForm, setFoodForm] = useState({ name: "", calories: "", protein: "", carbs: "", fat: "" });
   const [showFoodForm, setShowFoodForm] = useState(false);
   const [showGoals, setShowGoals] = useState(false);
   const [goalsForm, setGoalsForm] = useState(DAILY_GOALS);
@@ -476,7 +494,7 @@ function MainApp({ userId, userEmail }) {
   const addFood = () => {
     const f = { id: Date.now(), name: foodForm.name || "未命名食物", calories: parseFloat(foodForm.calories) || 0, protein: parseFloat(foodForm.protein) || 0, carbs: parseFloat(foodForm.carbs) || 0, fat: parseFloat(foodForm.fat) || 0, fiber: parseFloat(foodForm.fiber) || 0 };
     setFoodLog(prev => ({ ...prev, [selectedDate]: [...(prev[selectedDate] || []), f] }));
-    setFoodForm({ name: "", calories: "", protein: "", carbs: "", fat: "", fiber: "" });
+    setFoodForm({ name: "", calories: "", protein: "", carbs: "", fat: "" });
     setShowFoodForm(false);
   };
 
@@ -582,7 +600,6 @@ function MainApp({ userId, userEmail }) {
               <NutriBar label="蛋白質" current={selectedTotals.protein} goal={goals.protein} color={C.blue} />
               <NutriBar label="碳水化合物" current={selectedTotals.carbs} goal={goals.carbs} color={C.yellow} />
               <NutriBar label="脂肪" current={selectedTotals.fat} goal={goals.fat} color={C.purple} />
-              <NutriBar label="膳食纖維" current={selectedTotals.fiber} goal={goals.fiber} color={C.green} />
             </div>
 
             <div style={S.card}>
@@ -620,7 +637,7 @@ function MainApp({ userId, userEmail }) {
                     <div><span style={{ fontSize: 26, fontWeight: 600, color: C.accent }}>{foodForm.calories || 0}</span><span style={{ fontSize: 12, color: C.textMuted, marginLeft: 4 }}>kcal</span></div>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
-                    {[["protein", "蛋白質 (×4 kcal)", C.blue], ["carbs", "碳水化合物 (×4 kcal)", C.yellow], ["fat", "脂肪 (×9 kcal)", C.purple], ["fiber", "膳食纖維", C.green]].map(([field, label, color]) => (
+                    {[["protein", "蛋白質 (×4 kcal)", C.blue], ["carbs", "碳水化合物 (×4 kcal)", C.yellow], ["fat", "脂肪 (×9 kcal)", C.purple]].map(([field, label, color]) => (
                       <div key={field}>
                         <div style={{ fontSize: 10, fontWeight: 600, color, marginBottom: 3, paddingLeft: 2 }}>{label}</div>
                         <input style={{ ...S.input, borderColor: color }} type="number" placeholder="0 g" value={foodForm[field]}
@@ -712,8 +729,18 @@ function MainApp({ userId, userEmail }) {
             </div>
 
             <div style={S.card}>
-              <div style={S.cardTitle}>體重曲線（全部）</div>
-              <WeightChart data={weightHistory} shotDate={shotDate} />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={S.cardTitle}>體重曲線</div>
+                <div style={{ display: "flex", gap: 4 }}>
+                  {RANGE_OPTIONS.map(({ label, days }) => (
+                    <button key={days} onClick={() => setChartRange(days)}
+                      style={{ padding: "4px 9px", borderRadius: 4, border: `0.5px solid ${chartRange === days ? C.accent : C.border}`, background: chartRange === days ? C.accentLight : "transparent", color: chartRange === days ? C.accent : C.textMuted, fontSize: 11, fontWeight: chartRange === days ? 700 : 400, cursor: "pointer" }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <WeightChart data={weightHistory} shotDate={shotDate} rangeDays={chartRange} />
             </div>
 
             {weightHistory.length > 0 && (
@@ -763,20 +790,46 @@ function MainApp({ userId, userEmail }) {
 
         {/* 飲食紀錄 TAB */}
         {tab === "history" && (
-          <div style={S.card}>
-            <div style={S.cardTitle}>飲食紀錄</div>
-            {Object.keys(foodLog).length === 0 && <div style={{ color: C.textMuted, fontSize: 13, textAlign: "center", padding: "20px 0" }}>還沒有任何飲食記錄</div>}
+          <div>
+            {Object.keys(foodLog).length === 0 && (
+              <div style={{ ...S.card, color: C.textMuted, fontSize: 13, textAlign: "center", padding: "30px 0" }}>還沒有任何飲食記錄</div>
+            )}
             {Object.entries(foodLog).sort(([a], [b]) => b.localeCompare(a)).map(([date, foods]) => {
               const total = foods.reduce((a, f) => a + (f.calories || 0), 0);
+              const totalP = foods.reduce((a, f) => a + (f.protein || 0), 0);
+              const totalC = foods.reduce((a, f) => a + (f.carbs || 0), 0);
+              const totalF = foods.reduce((a, f) => a + (f.fat || 0), 0);
               return (
-                <div key={date} style={{ marginBottom: 14 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span style={{ fontWeight: 600, fontSize: 13, color: C.text }}>{fmtShort(date)}</span>
-                    <span style={{ fontSize: 12, color: C.accent, fontWeight: 600 }}>{total} kcal</span>
+                <div key={date} style={S.card}>
+                  {/* 日期 header */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                    <span style={{ fontWeight: 600, fontSize: 14, color: C.text }}>{fmtShort(date)}</span>
+                    <span style={{ fontSize: 13, color: C.accent, fontWeight: 600 }}>{total} kcal</span>
                   </div>
-                  {foods.map(f => (
-                    <div key={f.id} style={{ fontSize: 12, color: C.textMuted, padding: "4px 0 4px 10px", borderLeft: `2px solid ${C.border}`, marginBottom: 3 }}>
-                      {f.name} · {f.calories}kcal
+                  {/* 當日合計小標 */}
+                  <div style={{ display: "flex", gap: 8, marginBottom: 10, padding: "6px 10px", background: C.cardInner, borderRadius: 6 }}>
+                    {[["蛋白質", totalP, C.blue], ["碳水", totalC, C.yellow], ["脂肪", totalF, C.purple]].map(([label, val, color]) => (
+                      <div key={label} style={{ flex: 1, textAlign: "center" }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color }}>{val}g</div>
+                        <div style={{ fontSize: 9, color: C.textSub, marginTop: 1 }}>{label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* 各品項 */}
+                  {foods.map((f, idx) => (
+                    <div key={f.id} style={{ padding: "9px 0", borderTop: idx > 0 ? `0.5px solid ${C.border}` : "none" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: C.text }}>{f.name}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: C.accent }}>{f.calories} kcal</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 10 }}>
+                        {[["蛋白質", f.protein, C.blue], ["碳水", f.carbs, C.yellow], ["脂肪", f.fat, C.purple]].map(([label, val, color]) => (
+                          <div key={label} style={{ fontSize: 11, color: C.textMuted }}>
+                            <span style={{ color, fontWeight: 500 }}>{val || 0}g</span>
+                            <span style={{ marginLeft: 2 }}>{label}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -816,10 +869,7 @@ function MainApp({ userId, userEmail }) {
                   }} />
               </div>
             ))}
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ fontSize: 12, color: C.green, fontWeight: 600 }}>膳食纖維 (g)</label>
-              <input style={{ ...S.input, marginTop: 4, borderColor: C.green }} type="number" value={goalsForm.fiber} onChange={e => setGoalsForm(p => ({ ...p, fiber: parseFloat(e.target.value) || 0 }))} />
-            </div>
+
             <div style={S.row}>
               <button style={{ ...S.btn(C.green), flex: 1 }} onClick={() => { setGoals(goalsForm); setShowGoals(false); }}>儲存</button>
               <button style={S.outlineBtn} onClick={() => setShowGoals(false)}>取消</button>
