@@ -116,13 +116,6 @@ const NutriBar = ({ label, current, goal, color, unit = "g" }) => {
   );
 };
 
-const RANGE_OPTIONS = [
-  { label: "2週", days: 14 },
-  { label: "1個月", days: 30 },
-  { label: "3個月", days: 90 },
-  { label: "全部", days: 0 },
-];
-
 const WeightChart = ({ data, shotDate, rangeDays }) => {
   // Filter by range
   const filtered = rangeDays === 0 ? data : (() => {
@@ -138,7 +131,7 @@ const WeightChart = ({ data, shotDate, rangeDays }) => {
     </div>
   );
 
-  const W = 480, H = 190, PAD = { t: 20, r: 20, b: 36, l: 48 };
+  const W = 480, H = 190, PAD = { t: 20, r: 20, b: 36, l: 62 };
   const weights = filtered.map(d => d.weight);
   const minW = Math.min(...weights) - 1, maxW = Math.max(...weights) + 1;
   const sx = (i) => PAD.l + (i / (filtered.length - 1)) * (W - PAD.l - PAD.r);
@@ -161,7 +154,7 @@ const WeightChart = ({ data, shotDate, rangeDays }) => {
         return (
           <g key={t}>
             <line x1={PAD.l} y1={y} x2={W - PAD.r} y2={y} stroke={C.border} strokeWidth="1" strokeDasharray="4,3" />
-            <text x={PAD.l - 6} y={y + 4} textAnchor="end" fontSize="10" fill={C.textMuted}>{(maxW - (maxW - minW) * t).toFixed(1)}</text>
+            <text x={PAD.l - 10} y={y + 4} textAnchor="end" fontSize="10" fill={C.textMuted}>{(maxW - (maxW - minW) * t).toFixed(1)}</text>
           </g>
         );
       })}
@@ -443,7 +436,7 @@ export default function App() {
 // ─── 主畫面（需登入） ──────────────────────────────────────────────────────────
 function MainApp({ userId, userEmail }) {
   const [tab, setTab] = useState("today");
-  const [chartRange, setChartRange] = useState(30);
+  const [chartRange, setChartRange] = useState(30); // 0 = 全部
   const [weightHistory, setWeightHistory, readyWH] = useData(userId, "wh_v2", []);
   const [foodLog, setFoodLog, readyFL] = useData(userId, "fl_v2", {});
   const [goals, setGoals, readyGoals] = useData(userId, "goals_v2", DAILY_GOALS);
@@ -729,17 +722,66 @@ function MainApp({ userId, userEmail }) {
             </div>
 
             <div style={S.card}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                 <div style={S.cardTitle}>體重曲線</div>
-                <div style={{ display: "flex", gap: 4 }}>
-                  {RANGE_OPTIONS.map(({ label, days }) => (
-                    <button key={days} onClick={() => setChartRange(days)}
-                      style={{ padding: "4px 9px", borderRadius: 4, border: `0.5px solid ${chartRange === days ? C.accent : C.border}`, background: chartRange === days ? C.accentLight : "transparent", color: chartRange === days ? C.accent : C.textMuted, fontSize: 11, fontWeight: chartRange === days ? 700 : 400, cursor: "pointer" }}>
-                      {label}
-                    </button>
-                  ))}
+                <div style={{ fontSize: 12, fontWeight: 600, color: C.accent }}>
+                  {chartRange === 0 ? "全部" : `最近 ${chartRange} 天`}
                 </div>
               </div>
+
+              {/* Slider */}
+              <div style={{ marginBottom: 12 }}>
+                <style>{`
+                  .range-slider {
+                    -webkit-appearance: none;
+                    appearance: none;
+                    width: 100%;
+                    height: 3px;
+                    background: ${C.border};
+                    border-radius: 2px;
+                    outline: none;
+                    cursor: pointer;
+                  }
+                  .range-slider::-webkit-slider-thumb {
+                    -webkit-appearance: none;
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 50%;
+                    background: ${C.accent};
+                    cursor: pointer;
+                    border: 2px solid white;
+                    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+                  }
+                  .range-slider::-moz-range-thumb {
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 50%;
+                    background: ${C.accent};
+                    cursor: pointer;
+                    border: 2px solid white;
+                  }
+                `}</style>
+                <input
+                  type="range"
+                  className="range-slider"
+                  min={7}
+                  max={weightHistory.length > 0 ? Math.max(weightHistory.length, 365) : 365}
+                  step={1}
+                  value={chartRange === 0 ? Math.max(weightHistory.length, 365) : chartRange}
+                  onChange={e => {
+                    const v = parseInt(e.target.value);
+                    setChartRange(v >= Math.max(weightHistory.length, 365) ? 0 : v);
+                  }}
+                />
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: C.textSub, marginTop: 3 }}>
+                  <span>7天</span>
+                  <span>1個月</span>
+                  <span>3個月</span>
+                  <span>6個月</span>
+                  <span>全部</span>
+                </div>
+              </div>
+
               <WeightChart data={weightHistory} shotDate={shotDate} rangeDays={chartRange} />
             </div>
 
